@@ -1,0 +1,286 @@
+openapi: 3.0.0
+info:
+    version: '1.2'
+    title: Customer Review
+    description: This Customer Review API gives TigerChow users the ability to submit a customer review in the form of a simple questionnaire survey. Users can be tagged to receive a survey by submitting identifying information about the customer. It also provides the ability to fetch and filter review data that has been posted to the review service. 
+
+# URL is an example URL and does not exist.
+servers:
+    - url: 'https://tigerchow.com/v1'
+
+paths:
+    /survey_requests:
+        description: Fulfills user story 6, allows for a customer to be tagged by their ID to be sent a survey link via email.
+        summary: Tag and Manage Outgoing Review Requests 
+        post:
+            description: Allows the service to tag a recent customer order to have a review be sent to the customer from the Notification Center. 
+            summary: Tags a user to receive a survey 
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: 
+                            $ref: '#/components/schemas/User'
+                        example:
+                                cust_id: 555        
+            responses:
+                '201':
+                    description: Successfully Tagged Customer 
+                    content: 
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/User'
+                            example: 
+                                cust_id: 555
+                '400':
+                    description: Customer not Tagged
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Tagging failed, unspecified error
+    /survey_requests/customers:
+        description: All Customers Tagged to Receive a Survey 
+        summary: This endpoint is for managing and viewing all customers who are tagged to receive a customer review in the email. 
+        get:
+            description: View all customers that are waiting to receive their customer review survey in their email. The customers are returned in a list showing their unique customer id numbers.
+            summary: Retrieve All Pending Review Requests
+            responses:
+                '200':
+                    description: Successfully Retrieved All Pending Review Requests
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/User'
+                            example:
+                                [
+                                    {
+                                        cust_id: 100
+                                    },
+                                    {
+                                        cust_id: 101
+                                    },
+                                    {
+                                        cust_id: 102
+                                    }
+                                ]
+                '400':
+                    description: Failed to Retrieve List of Pending Review Requests
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Unable to find a list of customers with pending survey requests
+
+    /survey_requests/customers/{cust_id}: 
+        description:  Fulfills user story 6, checks that a customer ID exists to be sent a survey link via email. 
+        summary: Look up customer by ID 
+        get:
+            description: With this particular command, it allows the user to look up a Customer account by giving the API the Customer ID.
+            summary: Look up Customer by ID 
+            parameters:
+                - in: path
+                  name: cust_id
+                  description: ID of the user
+                  required: true
+                  schema:
+                      type: integer
+                      format: int64
+            responses:
+                '200':
+                    description: Successfully looked up Customer
+                    content:
+                        application/json:
+                            schema: 
+                                $ref: '#/components/schemas/User'
+                            example:
+                                cust_id: 555
+
+                '400':
+                    description: Fail to look up Customer
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Unable to look up customer
+    /customer_reviews:
+        description: Fulfills user story 1 & 2, allows for a completed customer review to be created and posted to a list for quality control admin. 
+        summary: Create and View Reviews 
+        post:
+            description: This particular request allows for the generation of new customer reviews on demand. Survey data is posted from the Customer UI.
+            summary: Create a new completed review. 
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Survey'
+                        example:
+                            {
+                                survey_id: 2525,
+                                overall_rate: true,
+                                food_rate: 6,
+                                new_customer: true,
+                                will_order_again: true,
+                                comments: I will definitely come back again!
+                            }
+            responses:
+                '201':
+                    description: Successfully created a new survey.
+                    content: 
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Survey'
+                            example:
+                                {
+                                    survey_id: 2525,
+                                    overall_rate: true,
+                                    food_rate: 6,
+                                    new_customer: true,
+                                    will_order_again: true,
+                                    comments: I will definitely come back again!
+                                }  
+                '400':
+                    description: Failed to create new survey.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Unable to post customer review due to error        
+    /customer_reviews/completed_reviews:
+        description: Fulfills user story 4 and 3, allows the quality control admin to receive a list of all completed reviews for that day or filter completed reviews by overall positive or overall negative.
+        summary: View completed customer review surveys or view by overall rating (true/positive or false/negative)
+        get: 
+            description: Allows the user to retrieve a list of all completed customer reviews. These reviews will be utilized by the reporting service to generate reports about customer review data.
+            parameters:
+                - in: query
+                  name: overallrating
+                  description: The query parameter that we use in order to filter reviews by overall rating (true/positive or false/negative)
+                  required: false
+                  schema:
+                      type: boolean 
+            summary: List of all completed reviews that are either positive or negative
+            responses:
+                '200':
+                    description: Successfully retrieved list
+                    content: 
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Survey'
+                            example:
+                                [
+                                    {
+                                        survey_id: 2525,
+                                        overall_rate: true,
+                                        food_rate: 6,
+                                        new_customer: true,
+                                        will_order_again: true,
+                                        comments: I will definitely come back again!
+                                    },
+                                    {
+                                        survey_id: 200022,
+                                        overall_rate: false,
+                                        comments: My food never arrived!
+                                    },
+                                    {
+                                        survey_id: 110278,
+                                        overall_rate: true
+                                    }
+                                ]
+                '400':
+                    description: Failed to retrieve list of reviews
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Unable to retrieve surveys due to error
+    /customer_reviews/completed_reviews/{survey_id}:
+        description:  Fulfills user story 4, allows the quality control admin to check the contents of a specific review by looking it up via ID.
+        summary: Look up Completed Survey
+        get:
+            description: This call allows the micro service to look up a specific Customer Review from the given survey ID. These will be used by TigerChow staff to look up specific completed reviews.
+            summary: Look up Customer_Review by ID
+            parameters:
+                - name: survey_id
+                  in: path
+                  description: ID of the survey
+                  required: true
+                  schema:
+                      type: integer
+                      format: int32
+            responses:
+                '200':
+                    description: Successfully found customer review
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Survey'
+                            example:
+                                {
+                                    survey_id: 2525,
+                                    overall_rate: true,
+                                    food_rate: 6,
+                                    new_customer: true,
+                                    will_order_again: true,
+                                    comments: I will definitely come back again!
+                                }    
+                '400':
+                    description: Failed to find customer review
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                            example:
+                                message: Unable to look up customer review due to error
+components:
+    schemas:
+        User:
+            type: object
+            required:
+                - cust_id
+            properties:
+                cust_id:
+                    description: The hash ID that is generated for the user to signify the unique customer. 
+                    type: integer
+                    format: int64
+        Survey:
+            type: object
+            required: 
+                - survey_id
+                - overall_rate
+            properties:
+                survey_id:
+                    description: The unique hash ID that is generated to signify the unique survey
+                    type: integer
+                    format: int32
+                overall_rate:
+                    description: Rating the overall experience of the user. 
+                    type: boolean
+                food_rate:
+                    description: Rate the food out of 5 stars using half star increments (0-10 rating)
+                    type: integer
+                new_customer: 
+                    description: Signifies if the user is first time customer or not
+                    type: boolean
+                will_order_again:
+                    description: Signifies if the user would be willing to order again
+                    type: boolean
+                comments:
+                    description: Allows the user to express in more detail anything about their experience. 
+                    type: string
+        Error:
+            type: object
+            required:
+                - message
+            properties:
+                message:
+                    type: string
